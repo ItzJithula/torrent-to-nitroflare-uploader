@@ -5,7 +5,7 @@ import shutil
 import tempfile
 from pathlib import Path
 from logging.handlers import RotatingFileHandler
-from typing import Optional
+from typing import Optional, Callable
 
 
 def setup_logging(log_level: str = "INFO", log_file: Optional[str] = None,

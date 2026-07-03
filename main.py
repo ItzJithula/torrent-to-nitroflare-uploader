@@ -181,6 +181,65 @@ def upload_progress_callback(data: dict):
         print(f"\rProcessing {current}/{total}: {file_name}", end="", flush=True)
 
 
+def direct_download_progress_callback(data: dict):
+    downloaded = data.get("downloaded", 0)
+    total = data.get("total", 0)
+    progress = data.get("progress", 0)
+    print(f"\rDirect download: {progress:.1f}% ({format_size(downloaded)}/{format_size(total)})", end="", flush=True)
+
+
+def zip_progress_callback(data: dict):
+    progress = data.get("progress", 0)
+    print(f"\rZipping folder: {progress:.1f}%", end="", flush=True)
+
+
+def process_direct_link(
+    url: str,
+    direct_downloader: DirectLinkDownloader,
+    uploader: NitroflareUploader,
+    upload: bool = True,
+) -> bool:
+    print(f"\n{'='*60}")
+    print(f"Processing direct link: {url[:80]}...")
+    print(f"{'='*60}")
+
+    try:
+        print("\nDownloading from direct link...")
+        file_path = direct_downloader.download(url, progress_callback=direct_download_progress_callback)
+        print(f"\nDownload complete: {file_path}")
+
+        if not upload:
+            return True
+
+        files_to_upload = [str(file_path)]
+        print(f"\nUploading 1 file(s) to Nitroflare...")
+        results = uploader.upload_multiple(files_to_upload, progress_callback=upload_progress_callback)
+
+        print(f"\n\n{'='*60}")
+        print("Upload Results:")
+        print(f"{'='*60}")
+
+        success_count = 0
+        for result in results:
+            status_icon = "✓" if result.get("status") == "success" else "✗"
+            file_name = result.get("file", "unknown")
+            message = result.get("message", "")
+            print(f"{status_icon} {file_name}: {message}")
+            if result.get("status") == "success":
+                success_count += 1
+                download_url = result.get("download_url")
+                if download_url:
+                    print(f"  URL: {download_url}")
+
+        print(f"\nSummary: {success_count}/{len(results)} files uploaded successfully")
+        return success_count == len(files_to_upload)
+
+    except Exception as e:
+        logger.error(f"Error processing direct link {url}: {e}", exc_info=True)
+        print(f"\nError: {e}")
+        return False
+
+
 def process_single_torrent(
     torrent_source: str,
     downloader: TorrentDownloader,
@@ -210,10 +269,10 @@ def process_single_torrent(
         if torrent_path.is_file():
             files_to_upload.append(str(torrent_path))
         elif torrent_path.is_dir():
-            files_to_upload = [
-                str(f) for f in torrent_path.rglob("*") if f.is_file()
-            ]
-            print(f"Found {len(files_to_upload)} files in directory")
+            print(f"\nTorrent downloaded as folder. Zipping into single archive for upload...")
+            zip_path = zip_folder(torrent_path, progress_callback=zip_progress_callback)
+            print(f"\nCreated archive: {zip_path.name} ({format_size(zip_path.stat().st_size)})")
+            files_to_upload.append(str(zip_path))
 
         if not files_to_upload:
             print("No files found to upload")
@@ -287,6 +346,19 @@ def main():
 
     if args.list_completed:
         list_completed_torrents(downloader)
+        return
+
+    # Handle direct link download + upload
+    if args.direct_link:
+        torrent_config = config.get_torrent_config()
+        direct_downloader = DirectLinkDownloader(
+            download_dir=torrent_config.get("download_dir", "./downloads"),
+            timeout=config.get_nitroflare_config().get("upload_timeout", 3600),
+        )
+        success = process_direct_link(args.direct_link, direct_downloader, uploader, upload=True)
+        print(f"\n{'='*60}")
+        print(f"Direct link processing: {'SUCCESS' if success else 'FAILED'}")
+        print(f"{'='*60}")
         return
 
     if args.upload_only:

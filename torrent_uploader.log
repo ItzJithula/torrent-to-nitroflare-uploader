@@ -148,3 +148,12 @@ requests.exceptions.HTTPError: 404 Client Error: Not Found for url: https://nitr
 2026-07-03 15:00:51 - src.nitroflare_uploader - INFO - Upload response: {'files': [{'name': 'Patch.zip', 'size': '277516', 'type': 'application/octet-stream', 'xxhash': '02c223bfa5002051', 'url': 'https://nitroflare.com/view/D21D30A17DB6AE7/Patch.zip'}]}
 2026-07-03 15:00:51 - src.torrent_downloader - INFO - Torrent session stopped
 2026-07-03 15:00:51 - __main__ - INFO - Shutdown complete
+2026-07-03 15:54:34 - __main__ - INFO - Starting Torrent to Nitroflare Uploader
+2026-07-03 15:54:34 - src.direct_link_downloader - INFO - Starting download from: https://tunnel5.dlproxy.uk/download/A4DRljL3YcUzm9Azgc_rlz6ilcBqF6WCdyIJ6JtgP5piLVwm3pYNczApMcjq3wgBCpbK6-wevDdigFm4ZN_in0yJuFBT5Qoz4O1-hdx7lCSvhs0z18qODBQDEbLeqnXag3HDQGGluni7Lb1RsLABMp8sQexMVrdh83gTchvCOEX6ioyf15Y1kM3hzye8E-UxJt1husEmKCeRHfBldITYHrvh4F_Myk22kcXoMAKCbQ-VG-ab0LzVvNztkLosytiu5wuL8oP_TIRAJFv7sbemaO2L6Jp6Dbf4y5uzLbbkad1cG1UigKtHDO714x_u_9-AefYZuBKYEpetHkP_T7e3hp5ryiIp5iaGqMO28-noRD-IDv9s-GJ8r9fvRGHDgXUyNxPjcnWhDBUJK0rm2CDQtQ?sig=xiGcP8jlcT84veVv8tuzCVJw9ytd7koeYuCcd8kNIgM
+2026-07-03 15:56:03 - __main__ - INFO - Starting Torrent to Nitroflare Uploader
+2026-07-03 15:56:03 - src.direct_link_downloader - INFO - Starting download from: https://msedge.sf.dl.delivery.mp.microsoft.com/filestreamingservice/files/e3e5accf-401e-46e6-aa1a-c3c7e5d03b8e/MicrosoftEdgeWebView2RuntimeInstallerX64.exe
+2026-07-03 15:56:11 - src.direct_link_downloader - INFO - Download complete: downloads/MicrosoftEdgeWebView2RuntimeInstallerX64.exe
+2026-07-03 15:56:11 - src.nitroflare_uploader - INFO - Uploading file 1/1: MicrosoftEdgeWebView2RuntimeInstallerX64.exe
+2026-07-03 15:56:11 - src.nitroflare_uploader - INFO - Got upload server: https://s103.nitroflare.com:8443/index.php
+2026-07-03 15:56:11 - src.nitroflare_uploader - INFO - Uploading file: MicrosoftEdgeWebView2RuntimeInstallerX64.exe (192.31 MB)
+2026-07-03 15:56:23 - src.nitroflare_uploader - INFO - Upload response: {'files': [{'name': 'MicrosoftEdgeWebView2RuntimeInstallerX64.exe', 'size': '201647824', 'type': 'application/octet-stream', 'xxhash': '6f67a19e21c031ba', 'url': 'https://nitroflare.com/view/1455D2656EEB11A/MicrosoftEdgeWebView2RuntimeInstallerX64.exe'}]}
