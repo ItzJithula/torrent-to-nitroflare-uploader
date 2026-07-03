@@ -34,7 +34,8 @@ sudo apt install -y python3 python3-pip python3-venv libtorrent-rasterbar-dev \
 ### 2. Clone or Copy the Project
 
 ```bash
-cd /path/to/torrent-nitroflare-uploader
+git clone https://github.com/ItzJithula/torrent-to-nitroflare-uploader
+cd torrent-to-nitroflare-uploader
 ```
 
 ### 3. Create Virtual Environment
