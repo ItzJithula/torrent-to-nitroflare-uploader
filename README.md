@@ -5,11 +5,14 @@ Downloads files from torrents and automatically uploads them to Nitroflare.
 ## Features
 
 - Download torrents via magnet links, `.torrent` files, or HTTP URLs
+- **Direct link downloads** — download any file from a direct URL and upload to Nitroflare
+- **Folder uploads** — torrent directories are automatically zipped into a single archive before upload (Nitroflare has no folder concept)
 - Automatic upload to Nitroflare after download completes
 - Batch processing of multiple torrents
 - Progress tracking and logging
 - Configurable download settings (connections, ports, DHT, etc.)
 - Upload-only mode for existing files
+- **Google Colab support** — run it in the cloud via `colab_notebook.ipynb`
 - Ubuntu/Linux optimized
 
 ## Requirements
@@ -72,6 +75,9 @@ python main.py movie.torrent
 # Use a magnet link
 python main.py --magnet "magnet:?xt=urn:btih:..."
 
+# Download from a direct URL and upload to Nitroflare
+python main.py --direct-link "https://example.com/file.zip"
+
 # Batch process multiple torrents
 python main.py --batch torrents.txt
 ```
@@ -105,6 +111,23 @@ optional arguments:
   --upload-only         Skip download, only upload existing files
   --list-completed      List completed torrents and exit
   --verbose, -v         Enable verbose logging
+  --direct-link URL     Direct URL to download and upload
+```
+
+### Folder Uploads
+
+When a torrent downloads as a folder (multiple files), the uploader automatically
+zips the entire folder into a single `<folder_name>.zip` archive before uploading
+to Nitroflare. This preserves the folder structure inside the archive, since
+Nitroflare's API only supports single-file uploads.
+
+### Direct Link Downloads
+
+You can download any file from a direct URL (e.g., proxy tunnel links, CDN URLs)
+and upload it to Nitroflare:
+
+```bash
+python main.py --direct-link "https://example.com/path/to/file.exe"
 ```
 
 ### Upload Only Mode
@@ -134,6 +157,21 @@ See `config.example.yaml` for all available options:
 2. Go to your account settings
 3. Generate an API key
 4. Add it to `config.yaml`
+
+## Running on Google Colab
+
+You can run this project on [Google Colab](https://colab.research.google.com)
+for free cloud compute. Open `colab_notebook.ipynb` directly from this repo:
+
+1. Go to [Google Colab](https://colab.research.google.com)
+2. File → Open notebook → GitHub → paste repo URL:
+   `https://github.com/ItzJithula/torrent-to-nitroflare-uploader`
+3. Select `colab_notebook.ipynb`
+4. Run the cells top-to-bottom, pasting your Nitroflare user hash and magnet/direct link where prompted
+
+> ⚠️ **Note:** Torrenting on Colab may violate Google's ToS. Use only for legal
+> content, and prefer the `--direct-link` mode for direct downloads which is
+> less likely to be blocked.
 
 ## Running as a Service (Ubuntu)
 

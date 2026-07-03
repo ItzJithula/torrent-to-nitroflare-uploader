@@ -1,0 +1,26 @@
+nitroflare:
+  # Get your user hash from: https://nitroflare.net/user-hash
+  api_key: "YOUR_NITROFLARE_USER_HASH_HERE"
+  upload_timeout: 3600
+
+torrent:
+  download_dir: "./downloads"
+  max_active_downloads: 3
+  max_connections: 50
+  max_uploads_per_torrent: 10
+  upload_rate_limit: 0
+  download_rate_limit: 0
+  listen_ports:
+    - 6881
+    - 6882
+    - 6883
+  dht_enabled: true
+  lsd_enabled: true
+  upnp_enabled: true
+  natpmp_enabled: true
+
+logging:
+  level: "INFO"
+  file: "torrent_uploader.log"
+  max_size_mb: 10
+  backup_count: 5
