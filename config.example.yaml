@@ -3,6 +3,14 @@ nitroflare:
   api_key: "YOUR_NITROFLARE_USER_HASH_HERE"
   upload_timeout: 3600
 
+gofile:
+  # Get your API token from: https://gofile.io/myprofile
+  # Leave empty to upload as a guest (a new public folder is created each time).
+  api_token: "YOUR_GOFILE_API_TOKEN_HERE"
+  upload_timeout: 3600
+  # Upload region: auto, eu, na, sg, hk, jp, sa
+  region: "auto"
+
 torrent:
   download_dir: "./downloads"
   max_active_downloads: 3

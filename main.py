@@ -26,6 +26,7 @@ from src.config_loader import ConfigLoader
 from src.torrent_downloader import TorrentDownloader
 from src.direct_link_downloader import DirectLinkDownloader
 from src.nitroflare_uploader import NitroflareUploader
+from src.gofile_uploader import GofileUploader
 from src.utils import setup_logging, format_size, format_speed, format_time, zip_folder
 
 logger = logging.getLogger(__name__)
@@ -144,6 +145,55 @@ def create_uploader(config: ConfigLoader) -> NitroflareUploader:
     return NitroflareUploader(api_key=api_key, timeout=timeout)
 
 
+def create_gofile_uploader(config: ConfigLoader) -> GofileUploader:
+    gofile_config = config.get_gofile_config()
+    api_token = gofile_config.get("api_token")
+    timeout = gofile_config.get("upload_timeout", 3600)
+    region = gofile_config.get("region", "auto")
+
+    return GofileUploader(api_token=api_token, timeout=timeout, region=region)
+
+
+def ask_upload_destination(config: ConfigLoader) -> str:
+    """Ask the user whether to upload to Gofile or Nitroflare.
+
+    Returns one of: "gofile", "nitroflare", "both", "skip".
+    Only offers backends that are actually configured.
+    """
+    nitroflare_config = config.get_nitroflare_config()
+    gofile_config = config.get_gofile_config()
+
+    nitroflare_key = nitroflare_config.get("api_key")
+    has_nitroflare = bool(nitroflare_key) and nitroflare_key != "YOUR_NITROFLARE_USER_HASH_HERE"
+    has_gofile = bool(gofile_config.get("api_token")) \
+        and gofile_config.get("api_token") != "YOUR_GOFILE_API_TOKEN_HERE"
+
+    options = []
+    if has_gofile:
+        options.append("gofile")
+    if has_nitroflare:
+        options.append("nitroflare")
+    if has_gofile and has_nitroflare:
+        options.append("both")
+    options.append("skip")
+
+    print("\nWhere would you like to upload the downloaded file(s)?")
+    for i, opt in enumerate(options, 1):
+        print(f"  {i}. {opt}")
+
+    while True:
+        try:
+            choice = input(f"Enter choice (1-{len(options)}), default 1: ").strip()
+            if choice == "":
+                return options[0]
+            idx = int(choice) - 1
+            if 0 <= idx < len(options):
+                return options[idx]
+            print(f"Please enter a number between 1 and {len(options)}")
+        except (ValueError, EOFError):
+            print("Invalid input, please try again")
+
+
 def progress_callback_factory(torrent_id: str):
     last_update = [0.0]
 
@@ -156,9 +206,22 @@ def progress_callback_factory(torrent_id: str):
         progress = data.get("progress", 0)
         download_rate = data.get("download_rate", 0)
         state = data.get("state", "unknown")
+        source = data.get("source", "")
+        name = data.get("name", torrent_id)
+
+        # Build a label that shows the file/torrent name and, for magnet links,
+        # the magnet link so the user can see what is being downloaded.
+        if source.startswith("magnet:"):
+            # Truncate the magnet link so the line stays readable
+            magnet_short = source[:60] + ("..." if len(source) > 60 else "")
+            label = f"{name} | {magnet_short}"
+        elif source:
+            label = f"{name} | {Path(source).name}"
+        else:
+            label = name
 
         print(
-            f"\r[{torrent_id[:30]}] "
+            f"\r[{label[:80]}] "
             f"Progress: {progress:.1f}% | "
             f"Speed: {format_speed(download_rate * 1024)} | "
             f"State: {state}",
@@ -196,7 +259,9 @@ def zip_progress_callback(data: dict):
 def process_direct_link(
     url: str,
     direct_downloader: DirectLinkDownloader,
-    uploader: NitroflareUploader,
+    nitroflare_uploader: Optional[NitroflareUploader],
+    gofile_uploader: Optional[GofileUploader],
+    upload_destination: str = "nitroflare",
     upload: bool = True,
 ) -> bool:
     print(f"\n{'='*60}")
@@ -208,31 +273,27 @@ def process_direct_link(
         file_path = direct_downloader.download(url, progress_callback=direct_download_progress_callback)
         print(f"\nDownload complete: {file_path}")
 
-        if not upload:
+        if not upload or upload_destination == "skip":
             return True
 
         files_to_upload = [str(file_path)]
-        print(f"\nUploading 1 file(s) to Nitroflare...")
-        results = uploader.upload_multiple(files_to_upload, progress_callback=upload_progress_callback)
+        overall_success = True
 
-        print(f"\n\n{'='*60}")
-        print("Upload Results:")
-        print(f"{'='*60}")
+        if upload_destination in ("nitroflare", "both") and nitroflare_uploader:
+            print(f"\nUploading 1 file(s) to Nitroflare...")
+            results = nitroflare_uploader.upload_multiple(
+                files_to_upload, progress_callback=upload_progress_callback
+            )
+            overall_success = _print_upload_results("Nitroflare", results) and overall_success
 
-        success_count = 0
-        for result in results:
-            status_icon = "✓" if result.get("status") == "success" else "✗"
-            file_name = result.get("file", "unknown")
-            message = result.get("message", "")
-            print(f"{status_icon} {file_name}: {message}")
-            if result.get("status") == "success":
-                success_count += 1
-                download_url = result.get("download_url")
-                if download_url:
-                    print(f"  URL: {download_url}")
+        if upload_destination in ("gofile", "both") and gofile_uploader:
+            print(f"\nUploading 1 file(s) to Gofile...")
+            results = gofile_uploader.upload_multiple(
+                files_to_upload, progress_callback=upload_progress_callback
+            )
+            overall_success = _print_upload_results("Gofile", results) and overall_success
 
-        print(f"\nSummary: {success_count}/{len(results)} files uploaded successfully")
-        return success_count == len(files_to_upload)
+        return overall_success
 
     except Exception as e:
         logger.error(f"Error processing direct link {url}: {e}", exc_info=True)
@@ -243,7 +304,9 @@ def process_direct_link(
 def process_single_torrent(
     torrent_source: str,
     downloader: TorrentDownloader,
-    uploader: NitroflareUploader,
+    nitroflare_uploader: Optional[NitroflareUploader],
+    gofile_uploader: Optional[GofileUploader],
+    upload_destination: str = "nitroflare",
     upload: bool = True,
 ) -> bool:
     print(f"\n{'='*60}")
@@ -260,8 +323,8 @@ def process_single_torrent(
 
         print(f"\nDownload complete: {torrent_path}")
 
-        if not upload:
-            print("Skipping upload (--upload-only not set)")
+        if not upload or upload_destination == "skip":
+            print("Skipping upload")
             return True
 
         files_to_upload = []
@@ -278,34 +341,52 @@ def process_single_torrent(
             print("No files found to upload")
             return False
 
-        print(f"\nUploading {len(files_to_upload)} file(s) to Nitroflare...")
-        results = uploader.upload_multiple(files_to_upload, progress_callback=upload_progress_callback)
+        overall_success = True
 
-        print(f"\n\n{'='*60}")
-        print("Upload Results:")
-        print(f"{'='*60}")
+        if upload_destination in ("nitroflare", "both") and nitroflare_uploader:
+            print(f"\nUploading {len(files_to_upload)} file(s) to Nitroflare...")
+            results = nitroflare_uploader.upload_multiple(
+                files_to_upload, progress_callback=upload_progress_callback
+            )
+            overall_success = _print_upload_results("Nitroflare", results) and overall_success
 
-        success_count = 0
-        for result in results:
-            status_icon = "✓" if result.get("status") == "success" else "✗"
-            file_name = result.get("file", "unknown")
-            message = result.get("message", "")
+        if upload_destination in ("gofile", "both") and gofile_uploader:
+            print(f"\nUploading {len(files_to_upload)} file(s) to Gofile...")
+            results = gofile_uploader.upload_multiple(
+                files_to_upload, progress_callback=upload_progress_callback
+            )
+            overall_success = _print_upload_results("Gofile", results) and overall_success
 
-            print(f"{status_icon} {file_name}: {message}")
-
-            if result.get("status") == "success":
-                success_count += 1
-                download_url = result.get("download_url")
-                if download_url:
-                    print(f"  URL: {download_url}")
-
-        print(f"\nSummary: {success_count}/{len(results)} files uploaded successfully")
-        return success_count == len(files_to_upload)
+        return overall_success
 
     except Exception as e:
         logger.error(f"Error processing torrent {torrent_source}: {e}", exc_info=True)
         print(f"\nError: {e}")
         return False
+
+
+def _print_upload_results(backend_name: str, results: list) -> bool:
+    """Print upload results for a given backend. Returns True if all succeeded."""
+    print(f"\n\n{'='*60}")
+    print(f"{backend_name} Upload Results:")
+    print(f"{'='*60}")
+
+    success_count = 0
+    for result in results:
+        status_icon = "✓" if result.get("status") == "success" else "✗"
+        file_name = result.get("file", "unknown")
+        message = result.get("message", "")
+
+        print(f"{status_icon} {file_name}: {message}")
+
+        if result.get("status") == "success":
+            success_count += 1
+            download_url = result.get("download_url")
+            if download_url:
+                print(f"  URL: {download_url}")
+
+    print(f"\n{backend_name} Summary: {success_count}/{len(results)} files uploaded successfully")
+    return success_count == len(results)
 
 
 def list_completed_torrents(downloader: TorrentDownloader):
@@ -342,7 +423,19 @@ def main():
     logger.info("Starting Torrent to Nitroflare Uploader")
 
     downloader = create_downloader(config)
-    uploader = create_uploader(config)
+
+    # Create uploaders for each configured backend. A backend is only created
+    # if its credentials are present in the config so the user can choose
+    # between Gofile and Nitroflare (or both) at runtime.
+    nitroflare_config = config.get_nitroflare_config()
+    gofile_config = config.get_gofile_config()
+    nitroflare_key = nitroflare_config.get("api_key")
+    has_nitroflare = bool(nitroflare_key) and nitroflare_key != "YOUR_NITROFLARE_USER_HASH_HERE"
+    has_gofile = bool(gofile_config.get("api_token")) \
+        and gofile_config.get("api_token") != "YOUR_GOFILE_API_TOKEN_HERE"
+
+    nitroflare_uploader = create_uploader(config) if has_nitroflare else None
+    gofile_uploader = create_gofile_uploader(config) if has_gofile else None
 
     if args.list_completed:
         list_completed_torrents(downloader)
@@ -355,7 +448,12 @@ def main():
             download_dir=torrent_config.get("download_dir", "./downloads"),
             timeout=config.get_nitroflare_config().get("upload_timeout", 3600),
         )
-        success = process_direct_link(args.direct_link, direct_downloader, uploader, upload=True)
+        upload_destination = ask_upload_destination(config)
+        success = process_direct_link(
+            args.direct_link, direct_downloader,
+            nitroflare_uploader, gofile_uploader,
+            upload_destination=upload_destination, upload=True,
+        )
         print(f"\n{'='*60}")
         print(f"Direct link processing: {'SUCCESS' if success else 'FAILED'}")
         print(f"{'='*60}")
@@ -368,10 +466,21 @@ def main():
         if not files:
             print(f"No files found in {download_dir}")
             return
+        upload_destination = ask_upload_destination(config)
+        if upload_destination == "skip":
+            print("Skipping upload")
+            return
         print(f"Found {len(files)} files to upload")
-        results = uploader.upload_multiple(files, progress_callback=upload_progress_callback)
-        success = sum(1 for r in results if r.get("status") == "success")
-        print(f"\nUploaded {success}/{len(files)} files successfully")
+        success_count = 0
+        if upload_destination in ("nitroflare", "both") and nitroflare_uploader:
+            results = nitroflare_uploader.upload_multiple(files, progress_callback=upload_progress_callback)
+            if _print_upload_results("Nitroflare", results):
+                success_count += 1
+        if upload_destination in ("gofile", "both") and gofile_uploader:
+            results = gofile_uploader.upload_multiple(files, progress_callback=upload_progress_callback)
+            if _print_upload_results("Gofile", results):
+                success_count += 1
+        print(f"\nUploaded to {success_count} backend(s) successfully")
         return
 
     torrents_to_process = []
@@ -397,10 +506,18 @@ def main():
 
     downloader.start()
 
+    # Ask the user where to upload the downloaded files. This is asked once
+    # before the batch starts so the same destination applies to all torrents.
+    upload_destination = ask_upload_destination(config)
+
     try:
         success_count = 0
         for torrent in torrents_to_process:
-            if process_single_torrent(torrent, downloader, uploader, upload=True):
+            if process_single_torrent(
+                torrent, downloader,
+                nitroflare_uploader, gofile_uploader,
+                upload_destination=upload_destination, upload=True,
+            ):
                 success_count += 1
 
         print(f"\n{'='*60}")

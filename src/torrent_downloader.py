@@ -126,6 +126,7 @@ class TorrentDownloader:
             "torrent_info": torrent_info,
             "save_path": str(save_path),
             "progress_callback": progress_callback,
+            "source": torrent_source,
         }
 
         return torrent_id
@@ -171,6 +172,7 @@ class TorrentDownloader:
         handle = torrent_data["handle"]
         save_path = Path(torrent_data["save_path"])
         progress_callback = torrent_data.get("progress_callback")
+        torrent_source = torrent_data.get("source", "")
 
         logger.info(f"Waiting for torrent to complete: {torrent_id}")
 
@@ -183,6 +185,8 @@ class TorrentDownloader:
                     "progress": status.progress * 100,
                     "download_rate": status.download_rate / 1024,
                     "state": str(status.state),
+                    "source": torrent_source,
+                    "name": torrent_id,
                 })
 
             if status.is_seeding or status.progress >= 1.0:

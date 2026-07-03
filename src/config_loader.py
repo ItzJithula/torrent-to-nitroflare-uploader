@@ -31,10 +31,17 @@ class ConfigLoader:
 
     def _validate(self):
         nitroflare_config = self.config.get("nitroflare", {})
-        if not nitroflare_config.get("api_key") or nitroflare_config.get("api_key") == "your_nitroflare_api_key_here":
+        gofile_config = self.config.get("gofile", {})
+        nitroflare_key = nitroflare_config.get("api_key")
+        gofile_token = gofile_config.get("api_token")
+
+        # At least one upload backend must be configured. We don't hard-fail
+        # if Nitroflare is missing, because the user may choose Gofile instead.
+        if (not nitroflare_key or nitroflare_key == "your_nitroflare_api_key_here") \
+                and not gofile_token:
             raise ValueError(
-                "Nitroflare API key not configured. "
-                "Please set 'nitroflare.api_key' in config.yaml"
+                "No upload backend configured. Please set either "
+                "'nitroflare.api_key' or 'gofile.api_token' in config.yaml"
             )
 
         torrent_config = self.config.get("torrent", {})
@@ -56,6 +63,9 @@ class ConfigLoader:
 
     def get_nitroflare_config(self) -> Dict[str, Any]:
         return self.config.get("nitroflare", {})
+
+    def get_gofile_config(self) -> Dict[str, Any]:
+        return self.config.get("gofile", {})
 
     def get_torrent_config(self) -> Dict[str, Any]:
         return self.config.get("torrent", {})
