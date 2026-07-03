@@ -1,0 +1,150 @@
+2026-07-03 03:26:15 - __main__ - INFO - Starting Torrent to Nitroflare Uploader
+2026-07-03 03:29:57 - __main__ - INFO - Starting Torrent to Nitroflare Uploader
+2026-07-03 03:30:51 - __main__ - INFO - Starting Torrent to Nitroflare Uploader
+2026-07-03 03:32:16 - __main__ - INFO - Starting Torrent to Nitroflare Uploader
+2026-07-03 03:35:17 - __main__ - INFO - Starting Torrent to Nitroflare Uploader
+2026-07-03 03:37:05 - __main__ - INFO - Starting Torrent to Nitroflare Uploader
+2026-07-03 03:37:06 - src.torrent_downloader - INFO - Torrent session started
+2026-07-03 03:37:06 - __main__ - ERROR - Error processing torrent Watch-Dogs-AnkerGames.rar.torrent: 'unknown name in torrent params: paused'
+Traceback (most recent call last):
+  File "/workspaces/torrent-to-nitroflare-uploader/main.py", line 192, in process_single_torrent
+    torrent_id = downloader.add_torrent(torrent_source, progress_callback=progress_callback)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspaces/torrent-to-nitroflare-uploader/src/torrent_downloader.py", line 114, in add_torrent
+    torrent_handle = self.session.add_torrent(params)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+KeyError: 'unknown name in torrent params: paused'
+2026-07-03 03:37:06 - src.torrent_downloader - INFO - Torrent session stopped
+2026-07-03 03:37:06 - __main__ - INFO - Shutdown complete
+2026-07-03 03:38:24 - __main__ - INFO - Starting Torrent to Nitroflare Uploader
+2026-07-03 03:38:24 - src.torrent_downloader - INFO - Torrent session started
+2026-07-03 03:38:24 - __main__ - ERROR - Error processing torrent Watch-Dogs-AnkerGames.rar.torrent: 'unknown name in torrent params: auto_managed'
+Traceback (most recent call last):
+  File "/workspaces/torrent-to-nitroflare-uploader/main.py", line 192, in process_single_torrent
+    torrent_id = downloader.add_torrent(torrent_source, progress_callback=progress_callback)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspaces/torrent-to-nitroflare-uploader/src/torrent_downloader.py", line 113, in add_torrent
+    torrent_handle = self.session.add_torrent(params)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+KeyError: 'unknown name in torrent params: auto_managed'
+2026-07-03 03:38:24 - src.torrent_downloader - INFO - Torrent session stopped
+2026-07-03 03:38:24 - __main__ - INFO - Shutdown complete
+2026-07-03 14:27:38 - __main__ - INFO - Starting Torrent to Nitroflare Uploader
+2026-07-03 14:27:38 - src.torrent_downloader - INFO - Torrent session started
+2026-07-03 14:27:38 - __main__ - ERROR - Error processing torrent Watch-Dogs-AnkerGames.rar.torrent: 'save_path must be set in add_torrent_params'
+Traceback (most recent call last):
+  File "/workspaces/torrent-to-nitroflare-uploader/main.py", line 192, in process_single_torrent
+    torrent_id = downloader.add_torrent(torrent_source, progress_callback=progress_callback)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspaces/torrent-to-nitroflare-uploader/src/torrent_downloader.py", line 108, in add_torrent
+    torrent_handle = self.session.add_torrent(params)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+KeyError: 'save_path must be set in add_torrent_params'
+2026-07-03 14:27:38 - src.torrent_downloader - INFO - Torrent session stopped
+2026-07-03 14:27:38 - __main__ - INFO - Shutdown complete
+2026-07-03 14:46:59 - __main__ - INFO - Starting Torrent to Nitroflare Uploader
+2026-07-03 14:46:59 - src.torrent_downloader - INFO - Torrent session started
+2026-07-03 14:46:59 - src.torrent_downloader - INFO - Added torrent file: Watch-Dogs-AnkerGames.rar.torrent
+2026-07-03 14:46:59 - __main__ - ERROR - Error processing torrent Watch-Dogs-AnkerGames.rar.torrent: 'save_path'
+Traceback (most recent call last):
+  File "/workspaces/torrent-to-nitroflare-uploader/main.py", line 195, in process_single_torrent
+    torrent_path = downloader.wait_for_completion(torrent_id)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspaces/torrent-to-nitroflare-uploader/src/torrent_downloader.py", line 171, in wait_for_completion
+    save_path = Path(torrent_data["save_path"])
+                     ~~~~~~~~~~~~^^^^^^^^^^^^^
+KeyError: 'save_path'
+2026-07-03 14:46:59 - src.torrent_downloader - INFO - Torrent session stopped
+2026-07-03 14:46:59 - __main__ - INFO - Shutdown complete
+2026-07-03 14:47:42 - __main__ - INFO - Starting Torrent to Nitroflare Uploader
+2026-07-03 14:47:42 - src.torrent_downloader - INFO - Torrent session started
+2026-07-03 14:47:42 - src.torrent_downloader - INFO - Added torrent file: Watch-Dogs-AnkerGames.rar.torrent
+2026-07-03 14:47:42 - src.torrent_downloader - INFO - Waiting for torrent to complete: Watch-Dogs-AnkerGames.rar
+2026-07-03 14:48:39 - __main__ - INFO - Starting Torrent to Nitroflare Uploader
+2026-07-03 14:48:39 - src.torrent_downloader - INFO - Torrent session started
+2026-07-03 14:48:39 - src.torrent_downloader - INFO - Added magnet link: magnet:?xt=urn:btih:0FE6819DB99B416D60EE137677E1C31BB12D3A0A...
+2026-07-03 14:48:41 - src.torrent_downloader - INFO - Waiting for torrent to complete: JRiver Media Center 35.0.67 Incl Patch - KhanPC
+2026-07-03 14:49:03 - src.torrent_downloader - INFO - Torrent completed: JRiver Media Center 35.0.67 Incl Patch - KhanPC
+2026-07-03 14:49:03 - src.nitroflare_uploader - INFO - Uploading file 1/6: How to Install.txt
+2026-07-03 14:49:03 - src.nitroflare_uploader - ERROR - Failed to get upload server: 404 Client Error: Not Found for url: https://nitroflare.com/api/fileupload/getServer?user=902ce8739cb5085d0b39ad521c4b9794bc84c1b3
+2026-07-03 14:49:03 - __main__ - ERROR - Error processing torrent magnet:?xt=urn:btih:0FE6819DB99B416D60EE137677E1C31BB12D3A0A: 404 Client Error: Not Found for url: https://nitroflare.com/api/fileupload/getServer?user=902ce8739cb5085d0b39ad521c4b9794bc84c1b3
+Traceback (most recent call last):
+  File "/workspaces/torrent-to-nitroflare-uploader/main.py", line 218, in process_single_torrent
+    results = uploader.upload_multiple(files_to_upload, progress_callback=upload_progress_callback)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspaces/torrent-to-nitroflare-uploader/src/nitroflare_uploader.py", line 119, in upload_multiple
+    result = self.upload_file(file_path, progress_callback)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspaces/torrent-to-nitroflare-uploader/src/nitroflare_uploader.py", line 49, in upload_file
+    self._get_upload_server()
+  File "/workspaces/torrent-to-nitroflare-uploader/src/nitroflare_uploader.py", line 26, in _get_upload_server
+    response.raise_for_status()
+  File "/home/codespace/.local/lib/python3.12/site-packages/requests/models.py", line 1167, in raise_for_status
+    raise HTTPError(http_error_msg, response=self)
+requests.exceptions.HTTPError: 404 Client Error: Not Found for url: https://nitroflare.com/api/fileupload/getServer?user=902ce8739cb5085d0b39ad521c4b9794bc84c1b3
+2026-07-03 14:49:03 - src.torrent_downloader - INFO - Torrent session stopped
+2026-07-03 14:49:03 - __main__ - INFO - Shutdown complete
+2026-07-03 14:57:08 - __main__ - INFO - Starting Torrent to Nitroflare Uploader
+2026-07-03 14:57:08 - src.torrent_downloader - INFO - Torrent session started
+2026-07-03 14:57:08 - src.torrent_downloader - INFO - Added magnet link: magnet:?xt=urn:btih:0FE6819DB99B416D60EE137677E1C31BB12D3A0A...
+2026-07-03 14:57:10 - src.torrent_downloader - INFO - Waiting for torrent to complete: JRiver Media Center 35.0.67 Incl Patch - KhanPC
+2026-07-03 14:57:32 - src.torrent_downloader - INFO - Torrent completed: JRiver Media Center 35.0.67 Incl Patch - KhanPC
+2026-07-03 14:57:32 - src.nitroflare_uploader - INFO - Uploading file 1/6: How to Install.txt
+2026-07-03 14:59:06 - __main__ - INFO - Starting Torrent to Nitroflare Uploader
+2026-07-03 14:59:06 - src.torrent_downloader - INFO - Torrent session started
+2026-07-03 14:59:06 - src.torrent_downloader - INFO - Added magnet link: magnet:?xt=urn:btih:0FE6819DB99B416D60EE137677E1C31BB12D3A0A&dn=JRiver+Media+Cen...
+2026-07-03 14:59:08 - src.torrent_downloader - INFO - Waiting for torrent to complete: JRiver Media Center 35.0.67 Incl Patch - KhanPC
+2026-07-03 14:59:34 - src.torrent_downloader - INFO - Torrent completed: JRiver Media Center 35.0.67 Incl Patch - KhanPC
+2026-07-03 14:59:34 - src.nitroflare_uploader - INFO - Uploading file 1/6: How to Install.txt
+2026-07-03 14:59:35 - src.nitroflare_uploader - INFO - Got upload server: https://s95.nitroflare.com:8443/index.php
+2026-07-03 14:59:35 - src.nitroflare_uploader - INFO - Uploading file: How to Install.txt (0.00 MB)
+2026-07-03 14:59:35 - src.nitroflare_uploader - INFO - Upload response: {'files': [{'name': 'How to Install.txt', 'size': '3014', 'type': 'application/octet-stream', 'xxhash': '1732ac3ed95e74f7', 'url': 'https://nitroflare.com/view/3714827A23414AB/How_to_Install.txt'}]}
+2026-07-03 14:59:35 - src.nitroflare_uploader - ERROR - Upload failed: Unknown error
+2026-07-03 14:59:36 - src.nitroflare_uploader - INFO - Uploading file 2/6: Password.txt
+2026-07-03 14:59:36 - src.nitroflare_uploader - INFO - Uploading file: Password.txt (0.00 MB)
+2026-07-03 14:59:37 - src.nitroflare_uploader - INFO - Upload response: {'files': [{'name': 'Password.txt', 'size': '18', 'type': 'application/octet-stream', 'xxhash': 'dd4b998953ed3259', 'url': 'https://nitroflare.com/view/E9212B7C6128323/Password.txt'}]}
+2026-07-03 14:59:37 - src.nitroflare_uploader - ERROR - Upload failed: Unknown error
+2026-07-03 14:59:38 - src.nitroflare_uploader - INFO - Uploading file 3/6: Like Us Facebook.URL
+2026-07-03 14:59:38 - src.nitroflare_uploader - INFO - Uploading file: Like Us Facebook.URL (0.00 MB)
+2026-07-03 14:59:39 - src.nitroflare_uploader - INFO - Upload response: {'files': [{'name': 'Like Us Facebook.URL', 'size': '257', 'type': 'application/octet-stream', 'xxhash': '212c3329fc39aed6', 'url': 'https://nitroflare.com/view/5CD1D13E1E344EE/Like_Us_Facebook.URL'}]}
+2026-07-03 14:59:39 - src.nitroflare_uploader - ERROR - Upload failed: Unknown error
+2026-07-03 14:59:40 - src.nitroflare_uploader - INFO - Uploading file 4/6: Support Us CrackingPatching.com.URL
+2026-07-03 14:59:40 - src.nitroflare_uploader - INFO - Uploading file: Support Us CrackingPatching.com.URL (0.00 MB)
+2026-07-03 14:59:41 - src.nitroflare_uploader - INFO - Upload response: {'files': [{'name': 'Support Us CrackingPatching.com.URL', 'size': '265', 'type': 'application/octet-stream', 'xxhash': 'a82b8dba2c1dcd07', 'url': 'https://nitroflare.com/view/6C462226D05C462/Support_Us_CrackingPatching.com.URL'}]}
+2026-07-03 14:59:41 - src.nitroflare_uploader - ERROR - Upload failed: Unknown error
+2026-07-03 14:59:42 - src.nitroflare_uploader - INFO - Uploading file 5/6: MediaCenter350067-x64.exe
+2026-07-03 14:59:42 - src.nitroflare_uploader - INFO - Uploading file: MediaCenter350067-x64.exe (47.31 MB)
+2026-07-03 14:59:46 - src.nitroflare_uploader - INFO - Upload response: {'files': [{'name': 'MediaCenter350067-x64.exe', 'size': '49611408', 'type': 'application/octet-stream', 'xxhash': '12a1d189d5b1700a', 'url': 'https://nitroflare.com/view/8A7F957FF19FD7B/MediaCenter350067-x64.exe'}]}
+2026-07-03 14:59:46 - src.nitroflare_uploader - ERROR - Upload failed: Unknown error
+2026-07-03 14:59:47 - src.nitroflare_uploader - INFO - Uploading file 6/6: Patch.zip
+2026-07-03 14:59:47 - src.nitroflare_uploader - INFO - Uploading file: Patch.zip (0.26 MB)
+2026-07-03 14:59:49 - src.nitroflare_uploader - INFO - Upload response: {'files': [{'name': 'Patch.zip', 'size': '277516', 'type': 'application/octet-stream', 'xxhash': '02c223bfa5002051', 'url': 'https://nitroflare.com/view/116EE64E85C92E3/Patch.zip'}]}
+2026-07-03 14:59:49 - src.nitroflare_uploader - ERROR - Upload failed: Unknown error
+2026-07-03 14:59:49 - src.torrent_downloader - INFO - Torrent session stopped
+2026-07-03 14:59:49 - __main__ - INFO - Shutdown complete
+2026-07-03 15:00:34 - __main__ - INFO - Starting Torrent to Nitroflare Uploader
+2026-07-03 15:00:34 - src.torrent_downloader - INFO - Torrent session started
+2026-07-03 15:00:34 - src.torrent_downloader - INFO - Added magnet link: magnet:?xt=urn:btih:0FE6819DB99B416D60EE137677E1C31BB12D3A0A&dn=JRiver+Media+Cen...
+2026-07-03 15:00:36 - src.torrent_downloader - INFO - Waiting for torrent to complete: JRiver Media Center 35.0.67 Incl Patch - KhanPC
+2026-07-03 15:00:36 - src.torrent_downloader - INFO - Torrent completed: JRiver Media Center 35.0.67 Incl Patch - KhanPC
+2026-07-03 15:00:36 - src.nitroflare_uploader - INFO - Uploading file 1/6: How to Install.txt
+2026-07-03 15:00:36 - src.nitroflare_uploader - INFO - Got upload server: https://s104.nitroflare.com:8443/index.php
+2026-07-03 15:00:36 - src.nitroflare_uploader - INFO - Uploading file: How to Install.txt (0.00 MB)
+2026-07-03 15:00:37 - src.nitroflare_uploader - INFO - Upload response: {'files': [{'name': 'How to Install.txt', 'size': '3014', 'type': 'application/octet-stream', 'xxhash': '1732ac3ed95e74f7', 'url': 'https://nitroflare.com/view/98537CE31F75146/How_to_Install.txt'}]}
+2026-07-03 15:00:38 - src.nitroflare_uploader - INFO - Uploading file 2/6: Password.txt
+2026-07-03 15:00:38 - src.nitroflare_uploader - INFO - Uploading file: Password.txt (0.00 MB)
+2026-07-03 15:00:39 - src.nitroflare_uploader - INFO - Upload response: {'files': [{'name': 'Password.txt', 'size': '18', 'type': 'application/octet-stream', 'xxhash': 'dd4b998953ed3259', 'url': 'https://nitroflare.com/view/1769DEDBEE028FE/Password.txt'}]}
+2026-07-03 15:00:40 - src.nitroflare_uploader - INFO - Uploading file 3/6: Like Us Facebook.URL
+2026-07-03 15:00:40 - src.nitroflare_uploader - INFO - Uploading file: Like Us Facebook.URL (0.00 MB)
+2026-07-03 15:00:41 - src.nitroflare_uploader - INFO - Upload response: {'files': [{'name': 'Like Us Facebook.URL', 'size': '257', 'type': 'application/octet-stream', 'xxhash': '212c3329fc39aed6', 'url': 'https://nitroflare.com/view/60D325840D7C8EC/Like_Us_Facebook.URL'}]}
+2026-07-03 15:00:42 - src.nitroflare_uploader - INFO - Uploading file 4/6: Support Us CrackingPatching.com.URL
+2026-07-03 15:00:42 - src.nitroflare_uploader - INFO - Uploading file: Support Us CrackingPatching.com.URL (0.00 MB)
+2026-07-03 15:00:43 - src.nitroflare_uploader - INFO - Upload response: {'files': [{'name': 'Support Us CrackingPatching.com.URL', 'size': '265', 'type': 'application/octet-stream', 'xxhash': 'a82b8dba2c1dcd07', 'url': 'https://nitroflare.com/view/2E724CAE2E530A0/Support_Us_CrackingPatching.com.URL'}]}
+2026-07-03 15:00:44 - src.nitroflare_uploader - INFO - Uploading file 5/6: MediaCenter350067-x64.exe
+2026-07-03 15:00:44 - src.nitroflare_uploader - INFO - Uploading file: MediaCenter350067-x64.exe (47.31 MB)
+2026-07-03 15:00:48 - src.nitroflare_uploader - INFO - Upload response: {'files': [{'name': 'MediaCenter350067-x64.exe', 'size': '49611408', 'type': 'application/octet-stream', 'xxhash': '12a1d189d5b1700a', 'url': 'https://nitroflare.com/view/63E989A84D31C48/MediaCenter350067-x64.exe'}]}
+2026-07-03 15:00:49 - src.nitroflare_uploader - INFO - Uploading file 6/6: Patch.zip
+2026-07-03 15:00:49 - src.nitroflare_uploader - INFO - Uploading file: Patch.zip (0.26 MB)
+2026-07-03 15:00:51 - src.nitroflare_uploader - INFO - Upload response: {'files': [{'name': 'Patch.zip', 'size': '277516', 'type': 'application/octet-stream', 'xxhash': '02c223bfa5002051', 'url': 'https://nitroflare.com/view/D21D30A17DB6AE7/Patch.zip'}]}
+2026-07-03 15:00:51 - src.torrent_downloader - INFO - Torrent session stopped
+2026-07-03 15:00:51 - __main__ - INFO - Shutdown complete

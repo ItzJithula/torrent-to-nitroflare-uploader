@@ -33,17 +33,17 @@ class TorrentDownloader:
         self.completed_torrents: list = []
 
     def _setup_session(self) -> lt.session:
-        settings = lt.session_settings()
-        settings.user_agent = "torrent-nitroflare-uploader/1.0"
-        settings.choking_algorithm = lt.choking_algorithm_t.fastest_upload
-        settings.seed_choking_algorithm = lt.seed_choking_algorithm_t.fastest_upload
-        settings.max_connections = self.max_connections
-        settings.max_uploads_per_torrent = self.max_uploads_per_torrent
-        settings.upload_rate_limit = self.upload_rate_limit
-        settings.download_rate_limit = self.download_rate_limit
-        settings.active_downloads = self.max_active_downloads
-        settings.active_seeds = 1
-        settings.active_limit = self.max_active_downloads + 1
+        settings = lt.session_params()
+        settings.settings["user_agent"] = "torrent-nitroflare-uploader/1.0"
+        settings.settings["choking_algorithm"] = lt.choking_algorithm_t.rate_based_choker
+        settings.settings["seed_choking_algorithm"] = lt.seed_choking_algorithm_t.fastest_upload
+        settings.settings["max_connections"] = self.max_connections
+        settings.settings["max_uploads_per_torrent"] = self.max_uploads_per_torrent
+        settings.settings["upload_rate_limit"] = self.upload_rate_limit
+        settings.settings["download_rate_limit"] = self.download_rate_limit
+        settings.settings["active_downloads"] = self.max_active_downloads
+        settings.settings["active_seeds"] = 1
+        settings.settings["active_limit"] = self.max_active_downloads + 1
 
         session = lt.session(settings)
 
@@ -85,23 +85,18 @@ class TorrentDownloader:
         save_path = Path(save_path) if save_path else self.download_dir
         save_path.mkdir(parents=True, exist_ok=True)
 
-        params = {
-            "save_path": str(save_path),
-            "storage_mode": lt.storage_mode_t.storage_mode_sparse,
-            "paused": False,
-            "auto_managed": True,
-            "duplicate_is_error": True,
-        }
-
+        params = lt.add_torrent_params()
+        params.save_path = str(save_path)
+        params.storage_mode = lt.storage_mode_t.storage_mode_sparse
         torrent_handle = None
         torrent_info = None
 
         if torrent_source.startswith("magnet:"):
-            params["url"] = torrent_source
+            params.url = torrent_source
             torrent_handle = self.session.add_torrent(params)
             logger.info(f"Added magnet link: {torrent_source[:80]}...")
         elif torrent_source.startswith("http://") or torrent_source.startswith("https://"):
-            params["url"] = torrent_source
+            params.url = torrent_source
             torrent_handle = self.session.add_torrent(params)
             logger.info(f"Added HTTP torrent: {torrent_source}")
         else:
@@ -110,7 +105,7 @@ class TorrentDownloader:
                 raise FileNotFoundError(f"Torrent file not found: {torrent_source}")
 
             ti = lt.torrent_info(str(torrent_path))
-            params["ti"] = ti
+            params.ti = ti
             torrent_handle = self.session.add_torrent(params)
             torrent_info = ti
             logger.info(f"Added torrent file: {torrent_path.name}")

@@ -24,8 +24,9 @@ from typing import Optional
 
 from src.config_loader import ConfigLoader
 from src.torrent_downloader import TorrentDownloader
+from src.direct_link_downloader import DirectLinkDownloader
 from src.nitroflare_uploader import NitroflareUploader
-from src.utils import setup_logging, format_size, format_speed, format_time
+from src.utils import setup_logging, format_size, format_speed, format_time, zip_folder
 
 logger = logging.getLogger(__name__)
 
@@ -88,6 +89,10 @@ Examples:
         "-v",
         action="store_true",
         help="Enable verbose logging",
+    )
+    parser.add_argument(
+        "--direct-link",
+        help="Direct URL to download and upload (e.g., proxy tunnel link)",
     )
 
     return parser.parse_args()
@@ -264,12 +269,12 @@ def main():
 
     log_config = {}
     if args.verbose:
-        log_config["level"] = "DEBUG"
+        log_config["log_level"] = "DEBUG"
 
     config = load_config(args)
     logging_config = config.get_logging_config()
-    log_config.setdefault("level", logging_config.get("level", "INFO"))
-    log_config.setdefault("file", logging_config.get("file"))
+    log_config.setdefault("log_level", logging_config.get("level", "INFO"))
+    log_config.setdefault("log_file", logging_config.get("file"))
     log_config.setdefault("max_size_mb", logging_config.get("max_size_mb", 10))
     log_config.setdefault("backup_count", logging_config.get("backup_count", 5))
 

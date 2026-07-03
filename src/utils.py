@@ -1,5 +1,8 @@
 import logging
 import sys
+import zipfile
+import shutil
+import tempfile
 from pathlib import Path
 from logging.handlers import RotatingFileHandler
 from typing import Optional
@@ -71,3 +74,39 @@ def format_time(seconds: int) -> str:
         return f"{minutes}m {secs}s"
     else:
         return f"{secs}s"
+
+
+def zip_folder(folder_path: Path, output_path: Optional[Path] = None, progress_callback: Optional[Callable] = None) -> Path:
+    """
+    Zip a folder into a single archive.
+    Preserves the folder name as the archive name inside the zip.
+
+    Args:
+        folder_path: Path to the folder to zip.
+        output_path: Optional output zip path. If None, uses <folder_name>.zip in the same parent dir.
+        progress_callback: Optional callback(downloaded, total) for progress.
+
+    Returns:
+        Path to the created zip file.
+    """
+    folder_path = Path(folder_path)
+    if not folder_path.exists() or not folder_path.is_dir():
+        raise ValueError(f"Not a valid directory: {folder_path}")
+
+    if output_path is None:
+        output_path = folder_path.parent / f"{folder_path.name}.zip"
+
+    files = [f for f in folder_path.rglob("*") if f.is_file()]
+    total_size = sum(f.stat().st_size for f in files)
+    done_size = 0
+
+    with zipfile.ZipFile(output_path, "w", zipfile.ZIP_DEFLATED) as zf:
+        for file_path in files:
+            arcname = file_path.relative_to(folder_path.parent)  # preserves folder structure
+            zf.write(file_path, arcname)
+            done_size += file_path.stat().st_size
+            if progress_callback:
+                progress_callback({"downloaded": done_size, "total": total_size, "progress": (done_size / total_size) * 100})
+
+    logger.info(f"Created zip archive: {output_path} ({format_size(total_size)})")
+    return output_path

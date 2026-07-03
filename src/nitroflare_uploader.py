@@ -18,23 +18,21 @@ class NitroflareUploader:
 
     def _get_upload_server(self) -> str:
         try:
+            # Nitroflare's getServer endpoint returns a plain-text upload URL
+            # (e.g. "https://s88.nitroflare.com:8443/index.php"), not JSON.
             response = requests.get(
-                urljoin(self.base_url, "fileupload/getServer"),
-                params={"user": self.api_key},
+                "https://nitroflare.com/plugins/fileupload/getServer",
                 timeout=30,
             )
             response.raise_for_status()
-            data = response.json()
+            server_url = response.text.strip()
 
-            if data.get("status") == "OK" and "result" in data:
-                server_url = data["result"]
-                if not server_url.startswith("http"):
-                    server_url = f"https://{server_url}"
-                self.upload_server_url = server_url
-                logger.info(f"Got upload server: {server_url}")
-                return server_url
+            if not server_url.startswith("http"):
+                raise ValueError(f"Unexpected upload server response: {server_url!r}")
 
-            raise ValueError(f"Unexpected API response: {data}")
+            self.upload_server_url = server_url
+            logger.info(f"Got upload server: {server_url}")
+            return server_url
 
         except requests.exceptions.RequestException as e:
             logger.error(f"Failed to get upload server: {e}")
@@ -68,6 +66,20 @@ class NitroflareUploader:
                 result = response.json()
                 logger.info(f"Upload response: {result}")
 
+                # Nitroflare returns {"files": [{"name", "size", "type", "xxhash", "url"}]}
+                files_list = result.get("files", [])
+                if files_list:
+                    file_info = files_list[0]
+                    download_url = file_info.get("url")
+                    return {
+                        "status": "success",
+                        "file": file_path.name,
+                        "result": file_info,
+                        "download_url": download_url,
+                        "message": "Upload successful",
+                    }
+
+                # Fallback for legacy {"status": "OK", "result": {...}} format
                 if result.get("status") == "OK":
                     return {
                         "status": "success",
@@ -76,15 +88,15 @@ class NitroflareUploader:
                         "download_url": result.get("result", {}).get("url"),
                         "message": result.get("message", "Upload successful"),
                     }
-                else:
-                    error_msg = result.get("message", "Unknown error")
-                    logger.error(f"Upload failed: {error_msg}")
-                    return {
-                        "status": "error",
-                        "file": file_path.name,
-                        "message": error_msg,
-                        "raw_response": result,
-                    }
+
+                error_msg = result.get("message", "Unknown error")
+                logger.error(f"Upload failed: {error_msg}")
+                return {
+                    "status": "error",
+                    "file": file_path.name,
+                    "message": error_msg,
+                    "raw_response": result,
+                }
 
         except requests.exceptions.Timeout:
             logger.error(f"Upload timeout for {file_path.name}")
