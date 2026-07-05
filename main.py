@@ -25,6 +25,8 @@ from typing import Optional
 from src.config_loader import ConfigLoader
 from src.torrent_downloader import TorrentDownloader
 from src.direct_link_downloader import DirectLinkDownloader
+from src.http_downloader import HTTPDownloader
+from src.torrent_resolver import create_resolver
 from src.nitroflare_uploader import NitroflareUploader
 from src.gofile_uploader import GofileUploader
 from src.utils import setup_logging, format_size, format_speed, format_time, zip_folder
@@ -94,6 +96,11 @@ Examples:
     parser.add_argument(
         "--direct-link",
         help="Direct URL to download and upload (e.g., proxy tunnel link)",
+    )
+    parser.add_argument(
+        "--http-only",
+        action="store_true",
+        help="Skip libtorrent — use HTTP(S) downloader + torrent resolver for all sources",
     )
 
     return parser.parse_args()
@@ -389,9 +396,13 @@ def _print_upload_results(backend_name: str, results: list) -> bool:
     return success_count == len(results)
 
 
-def list_completed_torrents(downloader: TorrentDownloader):
+def list_completed_torrents(downloader: Optional[TorrentDownloader]):
     print("\nCompleted Torrents:")
     print("-" * 60)
+
+    if downloader is None:
+        print("No libtorrent session (--http-only mode). No torrent history.")
+        return
 
     if not downloader.completed_torrents and not downloader.active_torrents:
         print("No torrents in history")
@@ -402,6 +413,130 @@ def list_completed_torrents(downloader: TorrentDownloader):
         state = status.get("state", "unknown")
         progress = status.get("progress", 0)
         print(f"- {torrent_id[:50]}: {state} ({progress:.1f}%)")
+
+
+# ------------------------------------------------------------------
+# HTTP-only handler functions (no libtorrent)
+# ------------------------------------------------------------------
+
+
+def process_direct_link_http(
+    url: str,
+    http_downloader: HTTPDownloader,
+    nitroflare_uploader: Optional[NitroflareUploader],
+    gofile_uploader: Optional[GofileUploader],
+    upload_destination: str = "nitroflare",
+    upload: bool = True,
+) -> bool:
+    """Download a direct URL using HTTPDownloader, then upload."""
+    print(f"\n{'='*60}")
+    print(f"HTTP download: {url[:80]}...")
+    print(f"{'='*60}")
+
+    try:
+        print("\nDownloading...")
+        file_path = http_downloader.download(
+            url, progress_callback=direct_download_progress_callback
+        )
+        print(f"\nDownload complete: {file_path}")
+
+        if not upload or upload_destination == "skip":
+            return True
+
+        files_to_upload = [str(file_path)]
+        overall_success = True
+
+        if upload_destination in ("nitroflare", "both") and nitroflare_uploader:
+            print(f"\nUploading 1 file(s) to Nitroflare...")
+            results = nitroflare_uploader.upload_multiple(
+                files_to_upload, progress_callback=upload_progress_callback
+            )
+            overall_success = _print_upload_results("Nitroflare", results) and overall_success
+
+        if upload_destination in ("gofile", "both") and gofile_uploader:
+            print(f"\nUploading 1 file(s) to Gofile...")
+            results = gofile_uploader.upload_multiple(
+                files_to_upload, progress_callback=upload_progress_callback
+            )
+            overall_success = _print_upload_results("Gofile", results) and overall_success
+
+        return overall_success
+
+    except Exception as e:
+        logger.error(f"Error processing direct link {url}: {e}", exc_info=True)
+        print(f"\nError: {e}")
+        return False
+
+
+def process_resolved_source(
+    source: str,
+    resolver,
+    http_downloader: HTTPDownloader,
+    nitroflare_uploader: Optional[NitroflareUploader],
+    gofile_uploader: Optional[GofileUploader],
+    upload_destination: str = "nitroflare",
+    upload: bool = True,
+) -> bool:
+    """Resolve a magnet / torrent source via the resolver, then HTTP-download
+    each resolved file and upload."""
+    print(f"\n{'='*60}")
+    print(f"Resolving: {source[:80]}...")
+    print(f"{'='*60}")
+
+    try:
+        resolved = resolver.resolve(source)
+        if not resolved:
+            print(
+                "\n⚠ No direct links were resolved.\n"
+                "  Make sure 'torrent_resolver' is configured in config.yaml.\n"
+                "  See config.example.yaml for details."
+            )
+            return False
+
+        print(f"Resolved {len(resolved)} file(s). Downloading...")
+
+        files_to_upload = []
+        for item in resolved:
+            url = item.get("url", "")
+            filename = item.get("filename", None)
+            if not url:
+                continue
+            file_path = http_downloader.download(
+                url, filename=filename,
+                progress_callback=direct_download_progress_callback,
+            )
+            print(f"\nDownload complete: {file_path}")
+            files_to_upload.append(str(file_path))
+
+        if not files_to_upload:
+            print("No files downloaded.")
+            return False
+
+        if not upload or upload_destination == "skip":
+            return True
+
+        overall_success = True
+
+        if upload_destination in ("nitroflare", "both") and nitroflare_uploader:
+            print(f"\nUploading {len(files_to_upload)} file(s) to Nitroflare...")
+            results = nitroflare_uploader.upload_multiple(
+                files_to_upload, progress_callback=upload_progress_callback
+            )
+            overall_success = _print_upload_results("Nitroflare", results) and overall_success
+
+        if upload_destination in ("gofile", "both") and gofile_uploader:
+            print(f"\nUploading {len(files_to_upload)} file(s) to Gofile...")
+            results = gofile_uploader.upload_multiple(
+                files_to_upload, progress_callback=upload_progress_callback
+            )
+            overall_success = _print_upload_results("Gofile", results) and overall_success
+
+        return overall_success
+
+    except Exception as e:
+        logger.error(f"Error processing source {source}: {e}", exc_info=True)
+        print(f"\nError: {e}")
+        return False
 
 
 def main():
@@ -422,7 +557,12 @@ def main():
 
     logger.info("Starting Torrent to Nitroflare Uploader")
 
-    downloader = create_downloader(config)
+    # When --http-only is set, we never initialise libtorrent.
+    http_only = args.http_only
+    if not http_only:
+        downloader = create_downloader(config)
+    else:
+        downloader = None
 
     # Create uploaders for each configured backend. A backend is only created
     # if its credentials are present in the config so the user can choose
@@ -441,21 +581,59 @@ def main():
         list_completed_torrents(downloader)
         return
 
-    # Handle direct link download + upload
-    if args.direct_link:
+    # ------------------------------------------------------------------
+    # HTTP-only mode: process everything through HTTPDownloader +
+    # TorrentResolver, no libtorrent involved.
+    # ------------------------------------------------------------------
+    if http_only or args.direct_link:
         torrent_config = config.get_torrent_config()
-        direct_downloader = DirectLinkDownloader(
-            download_dir=torrent_config.get("download_dir", "./downloads"),
-            timeout=config.get_nitroflare_config().get("upload_timeout", 3600),
+        download_dir = torrent_config.get("download_dir", "./downloads")
+
+        http_cfg = config.get("http_downloader", {})
+        http_downloader = HTTPDownloader(
+            download_dir=download_dir,
+            timeout=http_cfg.get("timeout", 3600),
+            retry_attempts=http_cfg.get("retry_attempts", 3),
+            retry_delay=http_cfg.get("retry_delay", 5.0),
         )
+
+        resolver_cfg = config.get("torrent_resolver", {"backend": "none"})
+        resolver = create_resolver(resolver_cfg)
+
         upload_destination = ask_upload_destination(config)
-        success = process_direct_link(
-            args.direct_link, direct_downloader,
-            nitroflare_uploader, gofile_uploader,
-            upload_destination=upload_destination, upload=True,
-        )
+
+        if args.direct_link:
+            success = process_direct_link_http(
+                args.direct_link, http_downloader,
+                nitroflare_uploader, gofile_uploader,
+                upload_destination=upload_destination, upload=True,
+            )
+        elif http_only:
+            # Determine the source from the other args
+            source = None
+            if args.magnet:
+                source = args.magnet
+            elif args.torrent_file:
+                source = args.torrent_file
+            elif args.torrent:
+                source = args.torrent
+            elif args.batch:
+                print("Batch mode with --http-only is not yet supported. Use --direct-link instead.")
+                sys.exit(1)
+            else:
+                print("No download source provided with --http-only.")
+                sys.exit(1)
+
+            success = process_resolved_source(
+                source, resolver, http_downloader,
+                nitroflare_uploader, gofile_uploader,
+                upload_destination=upload_destination, upload=True,
+            )
+        else:
+            success = False
+
         print(f"\n{'='*60}")
-        print(f"Direct link processing: {'SUCCESS' if success else 'FAILED'}")
+        print(f"HTTP processing: {'SUCCESS' if success else 'FAILED'}")
         print(f"{'='*60}")
         return
 

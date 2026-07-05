@@ -27,6 +27,37 @@ torrent:
   upnp_enabled: true
   natpmp_enabled: true
 
+# ---------------------------------------------------------------------------
+# HTTP Downloader Settings (used by --http-only and colab_download.py)
+# No libtorrent required — pure HTTP(S) streaming downloads.
+# ---------------------------------------------------------------------------
+http_downloader:
+  # Timeout for each HTTP request in seconds
+  timeout: 3600
+  # Number of retry attempts on failure (enables resume via Range headers)
+  retry_attempts: 3
+  # Base delay (seconds) between retries (doubles each attempt)
+  retry_delay: 5.0
+
+# ---------------------------------------------------------------------------
+# Torrent Resolver Settings
+# Converts magnet links / .torrent files into direct HTTP(S) download URLs
+# using an external service.  Only needed when you use --http-only with
+# magnets or torrent files.
+#
+# Supported backends:
+#   - none        : skip resolution (only direct URLs work)
+#   - generic-api : send the source to a configurable HTTP endpoint
+# ---------------------------------------------------------------------------
+torrent_resolver:
+  backend: "none"       # change to "generic-api" when you have a service
+  # generic-api:
+  #   endpoint: "https://your-resolver.example.com/convert"
+  #   api_key: "your-api-key"
+  #   param_name: "source"
+  #   response_path: "data.files"
+  #   timeout: 120
+
 logging:
   level: "INFO"
   file: "torrent_uploader.log"

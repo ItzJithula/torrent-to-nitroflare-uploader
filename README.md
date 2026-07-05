@@ -6,20 +6,30 @@ Downloads files from torrents and automatically uploads them to Nitroflare.
 
 - Download torrents via magnet links, `.torrent` files, or HTTP URLs
 - **Direct link downloads** — download any file from a direct URL and upload to Nitroflare
+- **HTTP-only mode** (`--http-only`) — skip libtorrent entirely; use pure HTTP(S) downloads with resume support for large files
+- **Torrent-to-direct-link resolver** — configurable external API support to convert magnets/torrents into direct download links without libtorrent
+- **Standalone Colab script** (`colab_download.py`) — zero libtorrent imports, works in Google Colab out of the box
+- **Resumable downloads** — HTTP Range headers automatically used when the server supports them
+- **Retry with backoff** — failed downloads are retried automatically
 - **Folder uploads** — torrent directories are automatically zipped into a single archive before upload (Nitroflare has no folder concept)
 - Automatic upload to Nitroflare after download completes
 - Batch processing of multiple torrents
 - Progress tracking and logging
 - Configurable download settings (connections, ports, DHT, etc.)
 - Upload-only mode for existing files
-- **Google Colab support** — run it in the cloud via `colab_notebook.ipynb`
+- **Google Colab support** — run it in the cloud via `colab_notebook.ipynb` or `colab_download.py`
 - Ubuntu/Linux optimized
 
 ## Requirements
 
 - Python 3.8+
-- libtorrent (Python bindings)
 - Internet connection
+
+### For libtorrent mode (default)
+- `libtorrent` Python bindings (`pip install libtorrent` or `apt install python3-libtorrent`)
+
+### For HTTP-only mode (Colab-friendly)
+- No `libtorrent` required — only `requests`
 
 ## Installation on Ubuntu
 
@@ -70,14 +80,17 @@ nitroflare:
 ### Basic Usage
 
 ```bash
-# Download a torrent file and upload to Nitroflare
+# Download a torrent file and upload to Nitroflare (uses libtorrent)
 python main.py movie.torrent
 
-# Use a magnet link
+# Use a magnet link (uses libtorrent)
 python main.py --magnet "magnet:?xt=urn:btih:..."
 
-# Download from a direct URL and upload to Nitroflare
+# Download from a direct URL and upload to Nitroflare (uses HTTP)
 python main.py --direct-link "https://example.com/file.zip"
+
+# HTTP-only mode — skip libtorrent for all sources (Colab-friendly)
+python main.py --http-only --magnet "magnet:?xt=urn:btih:..."
 
 # Batch process multiple torrents
 python main.py --batch torrents.txt
@@ -113,6 +126,7 @@ optional arguments:
   --list-completed      List completed torrents and exit
   --verbose, -v         Enable verbose logging
   --direct-link URL     Direct URL to download and upload
+  --http-only           Skip libtorrent — use HTTP(S) downloader + torrent resolver
 ```
 
 ### Folder Uploads
@@ -130,6 +144,36 @@ and upload it to Nitroflare:
 ```bash
 python main.py --direct-link "https://example.com/path/to/file.exe"
 ```
+
+### HTTP-Only Mode (no libtorrent)
+
+Use `--http-only` to skip libtorrent entirely. This works on any environment
+(including Google Colab) where libtorrent is not available:
+
+```bash
+# With a direct URL
+python main.py --http-only --direct-link "https://example.com/large-file.zip"
+
+# With a magnet link (requires torrent_resolver config)
+python main.py --http-only --magnet "magnet:?xt=urn:btih:..."
+```
+
+When `--http-only` is used with magnets or `.torrent` files, the source is
+resolved through a configurable external API (see `torrent_resolver` in
+`config.example.yaml`). The resolver converts the torrent into one or more
+direct HTTP download URLs.
+
+### Standalone Colab Script
+
+`colab_download.py` is a standalone script with **zero libtorrent imports**.
+Use it directly on Google Colab:
+
+```bash
+python colab_download.py --direct-link "https://example.com/file.zip"
+python colab_download.py --magnet "magnet:?xt=urn:btih:..."
+```
+
+This script only requires `requests` and `pyyaml`.
 
 ### Upload Only Mode
 
@@ -162,17 +206,30 @@ See `config.example.yaml` for all available options:
 ## Running on Google Colab
 
 You can run this project on [Google Colab](https://colab.research.google.com)
-for free cloud compute. Open `colab_notebook.ipynb` directly from this repo:
+for free cloud compute.
+
+### Option A — Interactive notebook (recommended)
+
+Open `colab_notebook.ipynb` directly from this repo:
 
 1. Go to [Google Colab](https://colab.research.google.com)
 2. File → Open notebook → GitHub → paste repo URL:
    `https://github.com/ItzJithula/torrent-to-nitroflare-uploader`
 3. Select `colab_notebook.ipynb`
-4. Run the cells top-to-bottom, pasting your Nitroflare user hash and magnet/direct link where prompted
+4. Run the cells top-to-bottom, pasting your Nitroflare user hash and direct link where prompted
+
+### Option B — CLI script (no notebook required)
+
+```bash
+!git clone https://github.com/ItzJithula/torrent-to-nitroflare-uploader
+%cd torrent-to-nitroflare-uploader
+!pip install -q pyyaml requests
+!python colab_download.py --direct-link "https://example.com/file.zip"
+```
 
 > ⚠️ **Note:** Torrenting on Colab may violate Google's ToS. Use only for legal
-> content, and prefer the `--direct-link` mode for direct downloads which is
-> less likely to be blocked.
+> content, and prefer `colab_download.py --direct-link` for direct downloads
+> which is less likely to be blocked.
 
 ## Running as a Service (Ubuntu)
 
@@ -212,17 +269,23 @@ sudo systemctl status torrent-uploader
 ```
 torrent-nitroflare-uploader/
 ├── main.py                    # Main entry point
+├── colab_download.py          # Standalone Colab script (no libtorrent)
 ├── requirements.txt           # Python dependencies
 ├── config.example.yaml        # Example configuration
 ├── config.yaml                # Your configuration (create from example)
 ├── .gitignore
 ├── README.md
+├── colab_notebook.ipynb       # Interactive Colab notebook
 └── src/
     ├── __init__.py
-    ├── torrent_downloader.py  # Torrent download logic
-    ├── nitroflare_uploader.py # Nitroflare API upload logic
-    ├── config_loader.py       # Configuration management
-    └── utils.py               # Logging and utility functions
+    ├── torrent_downloader.py   # Torrent download logic (libtorrent)
+    ├── http_downloader.py      # HTTP downloader (no libtorrent, resume, retry)
+    ├── torrent_resolver.py     # Torrent-to-direct-link resolver framework
+    ├── direct_link_downloader.py
+    ├── nitroflare_uploader.py  # Nitroflare API upload logic
+    ├── gofile_uploader.py      # Gofile.io API upload logic
+    ├── config_loader.py        # Configuration management
+    └── utils.py                # Logging and utility functions
 ```
 
 ## Troubleshooting

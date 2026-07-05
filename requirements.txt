@@ -1,4 +1,7 @@
 requests>=2.31.0
+# libtorrent is only needed for the built-in BitTorrent downloader.
+# In Google Colab or when using --http-only / colab_download.py,
+# this dependency is not required (HTTP downloads need only requests).
 libtorrent>=2.0.9
 pyyaml>=6.0.1
 python-dotenv>=1.0.1
