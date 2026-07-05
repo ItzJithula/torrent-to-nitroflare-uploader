@@ -55,6 +55,9 @@ class NullResolver(BaseResolver):
     torrent-to-link conversion.
     """
 
+    def __init__(self, config: Optional[dict] = None):
+        pass
+
     def resolve(self, source: str) -> List[Dict[str, Any]]:
         logger.debug("NullResolver: skipping %s", source)
         return []

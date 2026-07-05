@@ -1,19 +1,24 @@
 import os
+import re
 import time
 import logging
 import requests
 from pathlib import Path
-from typing import Optional, Callable
+from typing import Optional, Callable, Dict, Any
 from urllib.parse import urljoin
 
 logger = logging.getLogger(__name__)
 
+FILE_ID_PATTERN = re.compile(r"/view/([A-Z0-9]+)/")
+
 
 class NitroflareUploader:
-    def __init__(self, api_key: str, timeout: int = 3600):
+    def __init__(self, api_key: str, timeout: int = 3600, user: Optional[str] = None, premium_key: Optional[str] = None):
         self.api_key = api_key
         self.timeout = timeout
-        self.base_url = "https://nitroflare.com/api/"
+        self.user = user
+        self.premium_key = premium_key
+        self.base_url = "https://nitroflare.com/api/v2"
         self.upload_server_url: Optional[str] = None
 
     def _get_upload_server(self) -> str:
@@ -62,8 +67,16 @@ class NitroflareUploader:
                 )
 
                 response.raise_for_status()
-
-                result = response.json()
+                try:
+                    result = response.json()
+                except ValueError:
+                    logger.error("Upload response is not JSON: %s", response.text[:500])
+                    return {
+                        "status": "error",
+                        "file": file_path.name,
+                        "message": "Upload server returned non-JSON response",
+                        "raw_response": response.text[:500],
+                    }
                 logger.info(f"Upload response: {result}")
 
                 # Nitroflare returns {"files": [{"name", "size", "type", "xxhash", "url"}]}
@@ -136,3 +149,120 @@ class NitroflareUploader:
                 time.sleep(1)
 
         return results
+
+    def _api_request(self, method: str, params: Optional[Dict[str, str]] = None) -> Dict[str, Any]:
+        """Make a request to the Nitroflare General API v2."""
+        url = f"{self.base_url}/{method}"
+        try:
+            response = requests.get(url, params=params, timeout=30)
+            response.raise_for_status()
+            data = response.json()
+
+            if data.get("type") == "error":
+                code = data.get("code")
+                message = data.get("message", "Unknown API error")
+                # Throttled / captcha required
+                if code == 12 and self.user:
+                    captcha_url = f"https://nitroflare.com/api/v2/solveCaptcha?user={self.user}"
+                    logger.warning(f"Throttled by API. Please solve captcha: {captcha_url}")
+                raise RuntimeError(f"Nitroflare API error {code}: {message}")
+
+            return data
+        except requests.exceptions.RequestException as e:
+            logger.error(f"API request failed for {method}: {e}")
+            raise
+
+    def get_file_info(self, file_ids: list) -> Dict[str, Any]:
+        """
+        Returns information about a file or multiple files.
+
+        Args:
+            file_ids: List of file IDs (e.g. ["3CB8F8AE25CF218"])
+
+        Returns:
+            Dict with file info under "result.files".
+        """
+        if not file_ids:
+            raise ValueError("file_ids must not be empty")
+        if len(file_ids) > 100:
+            raise ValueError("Maximum 100 file IDs allowed per request")
+
+        files_param = ",".join(file_ids)
+        return self._api_request("getFileInfo", {"files": files_param})
+
+    def get_download_link(self, file_id: str, **kwargs: str) -> Dict[str, Any]:
+        """
+        Returns a download link and other useful information.
+
+        - Premium users: pass ``user`` and ``premiumKey`` (or set them on the
+          uploader) to get a direct premium download link.
+        - Free users:
+            - Call with only ``file`` to get Step #1 data.
+            - Call with ``file`` + ``startDownload`` + ``hash1`` + ``hash2``
+              + ``captcha`` to get the final direct download link.
+
+        Args:
+            file_id: A file ID (e.g. "3CB8F8AE25CF218")
+            **kwargs: Optional extra query params such as ``user``,
+                ``premiumKey``, ``startDownload``, ``hash1``, ``hash2``,
+                ``captcha``.
+
+        Returns:
+            Dict with download info under ``result``.
+        """
+        params: Dict[str, str] = {"file": file_id}
+        if self.user and self.premium_key:
+            params["user"] = self.user
+            params["premiumKey"] = self.premium_key
+        params.update(kwargs)
+        return self._api_request("getDownloadLink", params)
+
+    def get_free_download_step1(self, file_id: str) -> Dict[str, Any]:
+        """Free download Step #1: generate a free download token."""
+        return self.get_download_link(file_id)
+
+    def get_free_download_step2(
+        self,
+        file_id: str,
+        start_download: str,
+        hash1: str,
+        hash2: str,
+        captcha: str,
+    ) -> Dict[str, Any]:
+        """Free download Step #2: return the final download link."""
+        return self.get_download_link(
+            file_id,
+            startDownload=start_download,
+            hash1=hash1,
+            hash2=hash2,
+            captcha=captcha,
+        )
+
+    def _extract_file_id(self, source: str) -> str:
+        match = FILE_ID_PATTERN.search(source)
+        if not match:
+            raise ValueError(f"Could not extract Nitroflare file ID from: {source}")
+        return match.group(1)
+
+    def get_file_info_from_url(self, nitroflare_url: str) -> Dict[str, Any]:
+        file_id = self._extract_file_id(nitroflare_url)
+        return self.get_file_info([file_id])
+
+    def get_final_download_link(self, nitroflare_url: str, **kwargs: str) -> Dict[str, Any]:
+        """
+        Convenience helper: given a Nitroflare file URL, return file info
+        plus the final download link when possible.
+
+        - Premium users get the direct download link immediately.
+        - Free users:
+            - Without extra kwargs, returns Step 1 data.
+            - With ``startDownload``, ``hash1``, ``hash2``, ``captcha``,
+              returns the final direct download link.
+        """
+        file_id = self._extract_file_id(nitroflare_url)
+        info = self.get_file_info([file_id])
+        link = self.get_download_link(file_id, **kwargs)
+        return {
+            "file_info": info,
+            "download_link": link,
+        }

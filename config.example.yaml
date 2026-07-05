@@ -1,6 +1,9 @@
 nitroflare:
   # Get your user hash from: https://nitroflare.net/user-hash
   api_key: "YOUR_NITROFLARE_USER_HASH_HERE"
+  # Optional: for premium download link generation via General API v2
+  # user: "your_email@example.com"
+  # premium_key: "your_premium_password"
   upload_timeout: 3600
 
 gofile:

@@ -148,8 +148,10 @@ def create_uploader(config: ConfigLoader) -> NitroflareUploader:
     nitroflare_config = config.get_nitroflare_config()
     api_key = nitroflare_config.get("api_key")
     timeout = nitroflare_config.get("upload_timeout", 3600)
+    user = nitroflare_config.get("user")
+    premium_key = nitroflare_config.get("premium_key")
 
-    return NitroflareUploader(api_key=api_key, timeout=timeout)
+    return NitroflareUploader(api_key=api_key, timeout=timeout, user=user, premium_key=premium_key)
 
 
 def create_gofile_uploader(config: ConfigLoader) -> GofileUploader:
@@ -291,7 +293,7 @@ def process_direct_link(
             results = nitroflare_uploader.upload_multiple(
                 files_to_upload, progress_callback=upload_progress_callback
             )
-            overall_success = _print_upload_results("Nitroflare", results) and overall_success
+            overall_success = _print_upload_results("Nitroflare", results, nitroflare_uploader) and overall_success
 
         if upload_destination in ("gofile", "both") and gofile_uploader:
             print(f"\nUploading 1 file(s) to Gofile...")
@@ -355,7 +357,7 @@ def process_single_torrent(
             results = nitroflare_uploader.upload_multiple(
                 files_to_upload, progress_callback=upload_progress_callback
             )
-            overall_success = _print_upload_results("Nitroflare", results) and overall_success
+            overall_success = _print_upload_results("Nitroflare", results, nitroflare_uploader) and overall_success
 
         if upload_destination in ("gofile", "both") and gofile_uploader:
             print(f"\nUploading {len(files_to_upload)} file(s) to Gofile...")
@@ -372,7 +374,7 @@ def process_single_torrent(
         return False
 
 
-def _print_upload_results(backend_name: str, results: list) -> bool:
+def _print_upload_results(backend_name: str, results: list, nitroflare_uploader=None) -> bool:
     """Print upload results for a given backend. Returns True if all succeeded."""
     print(f"\n\n{'='*60}")
     print(f"{backend_name} Upload Results:")
@@ -390,7 +392,15 @@ def _print_upload_results(backend_name: str, results: list) -> bool:
             success_count += 1
             download_url = result.get("download_url")
             if download_url:
-                print(f"  URL: {download_url}")
+                print(f"  Download URL: {download_url}")
+                # For Nitroflare, also fetch file info via General API v2
+                if backend_name == "Nitroflare" and nitroflare_uploader and "/" in download_url:
+                    try:
+                        info = result.get("result", {})
+                        size = info.get("size", "unknown")
+                        print(f"  Size: {size} bytes")
+                    except Exception:
+                        pass
 
     print(f"\n{backend_name} Summary: {success_count}/{len(results)} files uploaded successfully")
     return success_count == len(results)
@@ -451,7 +461,7 @@ def process_direct_link_http(
             results = nitroflare_uploader.upload_multiple(
                 files_to_upload, progress_callback=upload_progress_callback
             )
-            overall_success = _print_upload_results("Nitroflare", results) and overall_success
+            overall_success = _print_upload_results("Nitroflare", results, nitroflare_uploader) and overall_success
 
         if upload_destination in ("gofile", "both") and gofile_uploader:
             print(f"\nUploading 1 file(s) to Gofile...")
@@ -522,7 +532,7 @@ def process_resolved_source(
             results = nitroflare_uploader.upload_multiple(
                 files_to_upload, progress_callback=upload_progress_callback
             )
-            overall_success = _print_upload_results("Nitroflare", results) and overall_success
+            overall_success = _print_upload_results("Nitroflare", results, nitroflare_uploader) and overall_success
 
         if upload_destination in ("gofile", "both") and gofile_uploader:
             print(f"\nUploading {len(files_to_upload)} file(s) to Gofile...")
@@ -652,7 +662,7 @@ def main():
         success_count = 0
         if upload_destination in ("nitroflare", "both") and nitroflare_uploader:
             results = nitroflare_uploader.upload_multiple(files, progress_callback=upload_progress_callback)
-            if _print_upload_results("Nitroflare", results):
+            if _print_upload_results("Nitroflare", results, nitroflare_uploader):
                 success_count += 1
         if upload_destination in ("gofile", "both") and gofile_uploader:
             results = gofile_uploader.upload_multiple(files, progress_callback=upload_progress_callback)

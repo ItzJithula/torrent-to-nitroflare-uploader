@@ -188,6 +188,8 @@ python main.py --upload-only
 See `config.example.yaml` for all available options:
 
 - **nitroflare.api_key**: Your Nitroflare API key (required)
+- **nitroflare.user**: Your Nitroflare email (optional, for premium download link generation)
+- **nitroflare.premium_key**: Your Nitroflare premium password (optional, for premium download link generation)
 - **nitroflare.upload_timeout**: Upload timeout in seconds (default: 3600)
 - **torrent.download_dir**: Where to save downloaded files
 - **torrent.max_active_downloads**: Max concurrent downloads
